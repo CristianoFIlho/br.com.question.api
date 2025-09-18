@@ -10,6 +10,8 @@ from app.models.schemas import (
     QuizSubmission, QuizResults, QuizAnalytics, UserStats,
     DifficultyLevel
 )
+from app.routers.auth import get_current_active_user
+from app.models.database import User as DBUser
 
 router = APIRouter()
 
@@ -36,8 +38,12 @@ async def get_quiz_set(quiz_set_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/quiz-sets", response_model=QuizSet)
-async def create_quiz_set(quiz_set: QuizSetCreate, db: Session = Depends(get_db)):
-    """Create a new quiz set"""
+async def create_quiz_set(
+    quiz_set: QuizSetCreate, 
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
+):
+    """Create a new quiz set (requires authentication)"""
     service = QuizService(db)
     return service.create_quiz_set(quiz_set)
 
@@ -46,9 +52,10 @@ async def create_quiz_set(quiz_set: QuizSetCreate, db: Session = Depends(get_db)
 async def update_quiz_set(
     quiz_set_id: str, 
     quiz_set: QuizSetUpdate, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
 ):
-    """Update a quiz set"""
+    """Update a quiz set (requires authentication)"""
     service = QuizService(db)
     updated_quiz_set = service.update_quiz_set(quiz_set_id, quiz_set)
     if not updated_quiz_set:
@@ -57,8 +64,12 @@ async def update_quiz_set(
 
 
 @router.delete("/quiz-sets/{quiz_set_id}")
-async def delete_quiz_set(quiz_set_id: str, db: Session = Depends(get_db)):
-    """Delete a quiz set"""
+async def delete_quiz_set(
+    quiz_set_id: str, 
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
+):
+    """Delete a quiz set (requires authentication)"""
     service = QuizService(db)
     success = service.delete_quiz_set(quiz_set_id)
     if not success:
@@ -108,9 +119,10 @@ async def get_question(
 async def create_question(
     quiz_set_id: str,
     question: QuestionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
 ):
-    """Create a new question"""
+    """Create a new question (requires authentication)"""
     service = QuizService(db)
     
     # Verify quiz set exists
@@ -128,9 +140,10 @@ async def update_question(
     quiz_set_id: str,
     question_id: str,
     question: QuestionUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
 ):
-    """Update a question"""
+    """Update a question (requires authentication)"""
     service = QuizService(db)
     
     # Verify question exists and belongs to quiz set
@@ -148,9 +161,10 @@ async def update_question(
 async def delete_question(
     quiz_set_id: str,
     question_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
 ):
-    """Delete a question"""
+    """Delete a question (requires authentication)"""
     service = QuizService(db)
     
     # Verify question exists and belongs to quiz set
@@ -168,8 +182,8 @@ async def delete_question(
 async def submit_quiz(
     quiz_set_id: str,
     submission: QuizSubmission,
-    user_id: str = Query("anonymous"),  # TODO: Get from authentication
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
 ):
     """Submit quiz answers and get results"""
     service = QuizService(db)
@@ -179,29 +193,29 @@ async def submit_quiz(
     if not quiz_set:
         raise HTTPException(status_code=404, detail="Quiz set not found")
     
-    return service.submit_quiz(user_id, quiz_set_id, submission)
+    return service.submit_quiz(current_user.id, quiz_set_id, submission)
 
 
 @router.post("/progress", response_model=UserProgress)
 async def save_progress(
     progress: UserProgressCreate,
-    user_id: str = Query("anonymous"),  # TODO: Get from authentication
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
 ):
     """Save user progress"""
     service = QuizService(db)
-    return service.save_progress(user_id, progress)
+    return service.save_progress(current_user.id, progress)
 
 
 @router.get("/progress/{quiz_set_id}", response_model=UserProgress)
 async def get_progress(
     quiz_set_id: str,
-    user_id: str = Query("anonymous"),  # TODO: Get from authentication
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
 ):
     """Get user progress for a quiz set"""
     service = QuizService(db)
-    progress = service.get_progress(user_id, quiz_set_id)
+    progress = service.get_progress(current_user.id, quiz_set_id)
     if not progress:
         raise HTTPException(status_code=404, detail="Progress not found")
     return progress
@@ -222,9 +236,9 @@ async def get_quiz_analytics(quiz_set_id: str, db: Session = Depends(get_db)):
 
 @router.get("/users/stats", response_model=UserStats)
 async def get_user_stats(
-    user_id: str = Query("anonymous"),  # TODO: Get from authentication
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_active_user)
 ):
     """Get user statistics"""
     service = QuizService(db)
-    return service.get_user_stats(user_id)
+    return service.get_user_stats(current_user.id)

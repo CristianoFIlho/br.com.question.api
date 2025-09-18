@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.config import settings
-from app.routers import quiz
+from app.routers import quiz, auth
 from app.database.session import engine
 from app.models.database import Base
 
@@ -28,6 +28,12 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(
+    auth.router,
+    prefix=settings.API_V1_STR,
+    tags=["authentication"]
+)
+
 app.include_router(
     quiz.router,
     prefix=settings.API_V1_STR,

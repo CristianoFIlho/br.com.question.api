@@ -23,11 +23,11 @@ pip install -r requirements.txt
 ## 🗄️ Configuração do Banco de Dados
 
 ```bash
-# Configurar variáveis de ambiente (copiar .env.example para .env)
-cp .env.example .env
+# Configurar variáveis de ambiente (copiar env.example para .env)
+cp env.example .env
 
 # Executar migrações
-alembic upgrade head
+python migrate.py
 ```
 
 ## 🏃‍♂️ Executar
@@ -40,6 +40,35 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
+## 🔐 Autenticação
+
+A API utiliza JWT (JSON Web Tokens) para autenticação. Para usar endpoints protegidos:
+
+1. **Registrar usuário:**
+   ```bash
+   POST /api/v1/auth/register
+   {
+     "name": "João Silva",
+     "email": "joao@example.com",
+     "password": "senha123",
+     "role": "user"
+   }
+   ```
+
+2. **Fazer login:**
+   ```bash
+   POST /api/v1/auth/login
+   {
+     "username": "joao@example.com",
+     "password": "senha123"
+   }
+   ```
+
+3. **Usar token nos headers:**
+   ```
+   Authorization: Bearer <seu-token-jwt>
+   ```
+
 ## 📚 Documentação da API
 
 - Swagger UI: http://localhost:8000/docs
@@ -48,7 +77,23 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ## 🧪 Testes
 
 ```bash
+# Executar todos os testes
 pytest
+
+# Executar testes com verbose
+pytest -v
+
+# Executar apenas testes unitários
+pytest -m unit
+
+# Executar apenas testes de integração
+pytest -m integration
+
+# Executar testes com coverage
+pytest --cov=app
+
+# Executar testes específicos
+pytest tests/test_auth.py
 ```
 
 ## 📁 Estrutura do Projeto
